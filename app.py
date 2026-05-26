@@ -24,17 +24,27 @@ def tcg_headers():
     return h
 
 def tcg_get(url):
-    if USE_REQUESTS:
-        r = req_lib.get(url, headers=tcg_headers(), timeout=10)
-        r.raise_for_status()
-        return r.json()
-    import json as _j, urllib.request, ssl
-    ctx = ssl.create_default_context()
-    ctx.check_hostname = False
-    ctx.verify_mode = ssl.CERT_NONE
-    rq = urllib.request.Request(url, headers=tcg_headers())
-    with urllib.request.urlopen(rq, timeout=10, context=ctx) as resp:
-        return _j.loads(resp.read())
+    retries = 3
+    for i in range(retries):
+        try:
+            if USE_REQUESTS:
+                r = req_lib.get(url, headers=tcg_headers(), timeout=20)
+                r.raise_for_status()
+                return r.json()
+            import json as _j, urllib.request, ssl
+            ctx = ssl.create_default_context()
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
+            rq = urllib.request.Request(url, headers=tcg_headers())
+            with urllib.request.urlopen(rq, timeout=20, context=ctx) as resp:
+                return _j.loads(resp.read())
+        except req_lib.exceptions.Timeout:
+            if i == retries - 1:
+                raise
+        except Exception as e:
+            traceback.print_exc()
+            if i == retries - 1:
+                raise
 
 def hash_pw(pw):
     return hashlib.sha256(pw.encode()).hexdigest()
@@ -156,8 +166,7 @@ def login():
         username = request.form.get("username","").strip()
         password = request.form.get("password","")
         conn = get_db()
-        user = conn.execute("SELECT * FROM users WHERE username=? AND password=?",
-                            (username, hash_pw(password))).fetchone()
+        user = conn.execute("SELECT * FROM users WHERE username=? AND password=?", (username, hash_pw(password))).fetchone()
         conn.close()
         if user:
             session["user_id"]   = user["id"]
@@ -189,8 +198,7 @@ def register():
             color = random.choice(colors)
             try:
                 conn = get_db()
-                conn.execute("INSERT INTO users (username,email,password,avatar_color) VALUES (?,?,?,?)",
-                             (username, email, hash_pw(password), color))
+                conn.execute("INSERT INTO users (username,email,password,avatar_color) VALUES (?,?,?,?)", (username, email, hash_pw(password), color))
                 conn.commit()
                 user = conn.execute("SELECT * FROM users WHERE username=?", (username,)).fetchone()
                 conn.close()
@@ -318,7 +326,6 @@ def alert_add():
     conn.execute("INSERT INTO price_alerts (user_id,card_id,target_price,direction) VALUES (?,?,?,?)",
         (uid, d.get("card_id"), d.get("target_price"), d.get("direction","below")))
     conn.commit()
-    conn.close()
     return jsonify({"success": True})
 
 @app.route("/alerts/delete/<int:alert_id>", methods=["POST"])
@@ -327,7 +334,6 @@ def alert_delete(alert_id):
     conn = get_db()
     conn.execute("DELETE FROM price_alerts WHERE id=? AND user_id=?", (alert_id, session["user_id"]))
     conn.commit()
-    conn.close()
     return jsonify({"success": True})
 
 @app.route("/api/alerts")
@@ -349,8 +355,7 @@ def api_alerts():
 @login_required
 def toggle_favorite(card_id):
     conn = get_db()
-    conn.execute("UPDATE cards SET is_favorite = 1 - is_favorite WHERE id=? AND user_id=?",
-                 (card_id, session["user_id"]))
+    conn.execute("UPDATE cards SET is_favorite = 1 - is_favorite WHERE id=? AND user_id=?", (card_id, session["user_id"]))
     conn.commit()
     row = conn.execute("SELECT is_favorite FROM cards WHERE id=?", (card_id,)).fetchone()
     conn.close()
@@ -412,8 +417,7 @@ def add_card():
     results = []
     conn = get_db()
     for d in cards:
-        existing = conn.execute("SELECT id FROM cards WHERE user_id=? AND tcg_id=? AND condition=?",
-                                (uid, d.get("tcg_id"), d.get("condition","Near Mint"))).fetchone()
+        existing = conn.execute("SELECT id FROM cards WHERE user_id=? AND tcg_id=? AND condition=?", (uid, d.get("tcg_id"), d.get("condition","Near Mint"))).fetchone()
         if existing:
             conn.execute("UPDATE cards SET quantity=quantity+? WHERE id=?", (d.get("quantity",1), existing["id"]))
             results.append("incremented")
@@ -421,7 +425,7 @@ def add_card():
             conn.execute("""INSERT INTO cards
               (user_id,tcg_id,name,pokemon_type,rarity,set_name,set_series,card_number,hp,
                subtypes,condition,quantity,market_price,image_small,image_large,notes)
-              VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+              VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
               (uid, d.get("tcg_id"), d.get("name"), d.get("pokemon_type"), d.get("rarity"),
                d.get("set_name"), d.get("set_series"), d.get("card_number"), d.get("hp"),
                d.get("subtypes"), d.get("condition","Near Mint"), d.get("quantity",1),
@@ -445,8 +449,7 @@ def delete_card(card_id):
 def update_quantity(card_id):
     delta = request.get_json().get("delta", 0)
     conn  = get_db()
-    conn.execute("UPDATE cards SET quantity=MAX(0,quantity+?) WHERE id=? AND user_id=?",
-                 (delta, card_id, session["user_id"]))
+    conn.execute("UPDATE cards SET quantity=MAX(0,quantity+?) WHERE id=? AND user_id=?", (delta, card_id, session["user_id"]))
     conn.commit()
     row = conn.execute("SELECT quantity FROM cards WHERE id=?", (card_id,)).fetchone()
     if row and row[0] == 0:
