@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PokéVault — Create Account</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="auth-body">
+    <div class="bg-layer">
+        <div class="grid-overlay"></div>
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-logo">
+                <span class="logo-icon">◈</span>
+                <span class="logo-text">PokéVault</span>
+            </div>
+            <p class="auth-subtitle">Create your free vault today.</p>
+
+            {% if error %}
+            <div class="auth-error">⚠ {{ error }}</div>
+            {% endif %}
+
+            <form method="POST" class="auth-form">
+                <div class="auth-field">
+                    <label>Username</label>
+                    <input type="text" name="username" placeholder="Choose a username" required autocomplete="username">
+                </div>
+                <div class="auth-field">
+                    <label>Email</label>
+                    <input type="email" name="email" placeholder="your@email.com" required autocomplete="email">
+                </div>
+                <div class="auth-row">
+                    <div class="auth-field">
+                        <label>Password</label>
+                        <input type="password" name="password" placeholder="Min 6 characters" required autocomplete="new-password">
+                    </div>
+                    <div class="auth-field">
+                        <label>Confirm</label>
+                        <input type="password" name="confirm" placeholder="Repeat password" required autocomplete="new-password">
+                    </div>
+                </div>
+                <button type="submit" class="auth-btn">Create Account</button>
+            </form>
+
+            <p class="auth-switch">
+                Already have an account? <a href="{{ url_for('login') }}">Sign in →</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

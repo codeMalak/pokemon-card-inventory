@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PokéVault — Login</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="auth-body">
+    <div class="bg-layer">
+        <div class="grid-overlay"></div>
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-logo">
+                <span class="logo-icon">◈</span>
+                <span class="logo-text">PokéVault</span>
+            </div>
+            <p class="auth-subtitle">Your personal card collection, secured.</p>
+
+            {% if error %}
+            <div class="auth-error">⚠ {{ error }}</div>
+            {% endif %}
+
+            <form method="POST" class="auth-form">
+                <div class="auth-field">
+                    <label>Username</label>
+                    <input type="text" name="username" placeholder="Enter your username" required autocomplete="username">
+                </div>
+                <div class="auth-field">
+                    <label>Password</label>
+                    <input type="password" name="password" placeholder="Enter your password" required autocomplete="current-password">
+                </div>
+                <button type="submit" class="auth-btn">Sign In</button>
+            </form>
+
+            <p class="auth-switch">
+                Don't have an account? <a href="{{ url_for('register') }}">Create one →</a>
+            </p>
+        </div>
+
+        <div class="auth-features">
+            <div class="feature-item">
+                <span class="feature-icon">🃏</span>
+                <div>
+                    <strong>Live Card Search</strong>
+                    <p>Search 20,000+ cards with real art & market prices</p>
+                </div>
+            </div>
+            <div class="feature-item">
+                <span class="feature-icon">💰</span>
+                <div>
+                    <strong>Portfolio Tracking</strong>
+                    <p>Know your collection's total market value at a glance</p>
+                </div>
+            </div>
+            <div class="feature-item">
+                <span class="feature-icon">⭐</span>
+                <div>
+                    <strong>Wishlist & Trade List</strong>
+                    <p>Track cards you want and cards you're willing to trade</p>
+                </div>
+            </div>
+            <div class="feature-item">
+                <span class="feature-icon">🔔</span>
+                <div>
+                    <strong>Price Alerts</strong>
+                    <p>Get notified when cards hit your target price</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

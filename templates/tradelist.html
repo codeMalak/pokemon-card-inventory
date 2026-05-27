@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PokéVault — Trade List</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<div class="bg-layer"><div class="grid-overlay"></div><div class="orb orb-1"></div><div class="orb orb-2"></div><div class="orb orb-3"></div></div>
+<header class="header">
+    <div class="header-inner">
+        <div class="logo"><span class="logo-icon">◈</span><span class="logo-text">PokéVault</span></div>
+        <nav class="header-nav">
+            <a href="{{ url_for('index') }}" class="nav-link">Collection</a>
+            <a href="{{ url_for('wishlist') }}" class="nav-link">Wishlist</a>
+            <a href="{{ url_for('tradelist') }}" class="nav-link active">Trade List</a>
+        </nav>
+        <div class="header-right">
+            <div class="avatar" style="background:{{ avatar_color }}">{{ username[0].upper() }}</div>
+            <a href="{{ url_for('logout') }}" class="btn-outline-sm">Sign Out</a>
+        </div>
+    </div>
+</header>
+<main class="main">
+    <div class="page-hero">
+        <h1 class="page-title">⇄ Trade List</h1>
+        <p class="page-sub">Cards you're willing to trade or sell. Add them while searching your collection.</p>
+    </div>
+    {% if items %}
+    <div class="list-grid">
+        {% for item in items %}
+        <div class="list-card" id="trade-{{ item.id }}">
+            {% if item.image_small %}<img class="list-img" src="{{ item.image_small }}" alt="{{ item.name }}">{% endif %}
+            <div class="list-info">
+                <h3>{{ item.name }}</h3>
+                <p>{{ item.set_name }}{% if item.card_number %} · #{{ item.card_number }}{% endif %}</p>
+                <p class="list-rarity">{{ item.rarity or '—' }} · {{ item.condition }}</p>
+                {% if item.market_price %}<p class="list-price">Market: <span>${{ "%.2f"|format(item.market_price) }}</span></p>{% endif %}
+                {% if item.asking_price and item.asking_price > 0 %}<p class="list-alert-price">Asking: <span>${{ "%.2f"|format(item.asking_price) }}</span></p>{% endif %}
+                {% if item.notes %}<p class="list-notes">{{ item.notes }}</p>{% endif %}
+            </div>
+            <button class="delete-btn-list" data-id="{{ item.id }}" data-url="{{ url_for('tradelist_delete', item_id=item.id) }}">✕</button>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-pokeball"><div class="pb-top"></div><div class="pb-mid"></div><div class="pb-bot"></div><div class="pb-center"></div></div>
+        <h2>Trade list is empty</h2>
+        <p>When searching for cards, click <strong>"⇄ Trade"</strong> to mark cards you'd trade.</p>
+        <a href="{{ url_for('index') }}" class="btn-add large">← Back to Collection</a>
+    </div>
+    {% endif %}
+</main>
+<div class="toast" id="toast"></div>
+<script>
+document.querySelectorAll('.delete-btn-list').forEach(btn => {
+    btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        await fetch(btn.dataset.url, {method:'POST'});
+        document.getElementById(`trade-${id}`)?.remove();
+    });
+});
+</script>
+</body>
+</html>
