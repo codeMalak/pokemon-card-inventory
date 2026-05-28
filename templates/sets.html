@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="{{ theme }}">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PokéVault — Set Completion</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+<div class="bg-layer"><div class="grid-overlay"></div><div class="orb orb-1"></div><div class="orb orb-2"></div><div class="orb orb-3"></div></div>
+<header class="header">
+  <div class="header-inner">
+    <div class="logo"><span class="logo-icon">◈</span><span class="logo-text">PokéVault</span></div>
+    <nav class="header-nav">
+      <a href="/" class="nav-link">Collection</a>
+      <a href="/wishlist" class="nav-link">Wishlist</a>
+      <a href="/tradelist" class="nav-link">Trades</a>
+      <a href="/sets" class="nav-link active">Sets</a>
+      <a href="/scan" class="nav-link">🔬 Scan</a>
+    </nav>
+    <div class="header-right">
+      <div class="avatar" style="background:{{avatar_color}}">{{username[0].upper()}}</div>
+      <a href="/logout" class="btn-outline-sm">Sign Out</a>
+    </div>
+  </div>
+</header>
+<main class="main">
+  <div class="page-hero">
+    <h1 class="page-title">🃏 Set Completion</h1>
+    <p class="page-sub">Track how close you are to completing every set in your collection.</p>
+  </div>
+  {% if owned_sets %}
+  <div class="sets-grid" id="sets-grid">
+    {% for s in owned_sets %}
+    <div class="set-completion-card" id="scc-{{s.set_id}}" data-set-id="{{s.set_id}}" data-set-name="{{s.set_name}}">
+      <div class="scc-header">
+        <div class="scc-title">
+          <h3>{{s.set_name}}</h3>
+          <span class="scc-owned">{{s.owned_count}} owned</span>
+        </div>
+        <button class="pin-btn {{'pinned' if s.set_id in pinned_ids}}" data-set-id="{{s.set_id}}" data-set-name="{{s.set_name}}" title="Pin to header">📌</button>
+      </div>
+      <div class="scc-progress-wrap">
+        <div class="scc-track"><div class="scc-fill" id="fill-{{s.set_id}}" style="width:0%"></div></div>
+        <span class="scc-pct" id="pct-{{s.set_id}}">Loading…</span>
+      </div>
+      <div class="scc-stats" id="stats-{{s.set_id}}">
+        <span class="scc-stat">Value owned: <strong>${{"%.2f"|format(s.owned_value or 0)}}</strong></span>
+      </div>
+      <button class="btn-outline scc-detail-btn" data-set-id="{{s.set_id}}">View Missing Cards</button>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-pokeball"><div class="pb-top"></div><div class="pb-mid"></div><div class="pb-bot"></div><div class="pb-center"></div></div>
+    <h2>No sets yet</h2>
+    <p>Add cards with set information to track your set completion.</p>
+    <a href="/" class="btn-add large">← Back to Collection</a>
+  </div>
+  {% endif %}
+</main>
+
+<!-- Missing Cards Modal -->
+<div class="modal-overlay" id="missing-modal">
+<div class="modal missing-modal-inner">
+  <div class="modal-header">
+    <h2 id="missing-modal-title">Missing Cards</h2>
+    <button class="modal-close" data-close="missing-modal">✕</button>
+  </div>
+  <div class="missing-summary" id="missing-summary"></div>
+  <div class="missing-grid" id="missing-grid">
+    <div class="results-hint"><span>⏳</span><p>Loading…</p></div>
+  </div>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script>
+const PINNED_IDS = {{ pinned_ids | list | tojson }};
+
+// Load completion data for all sets
+document.querySelectorAll('.set-completion-card').forEach(async card => {
+    const sid = card.dataset.setId;
+    try {
+        const res  = await fetch(`/api/set/${sid}/completion`);
+        const data = await res.json();
+        const fill = document.getElementById(`fill-${sid}`);
+        const pct  = document.getElementById(`pct-${sid}`);
+        const stats= document.getElementById(`stats-${sid}`);
+        if (fill) fill.style.width = data.pct + '%';
+        if (pct)  pct.textContent  = `${data.owned}/${data.total} (${data.pct}%)`;
+        // Color the bar
+        if (fill) {
+            fill.style.background = data.pct >= 100 ? '#22c55e'
+                : data.pct >= 75 ? '#f59e0b'
+                : data.pct >= 50 ? '#3b82f6'
+                : '#8b5cf6';
+        }
+        if (stats) stats.innerHTML = `
+            <span class="scc-stat">Owned: <strong>${data.owned}/${data.total}</strong></span>
+            <span class="scc-stat">Missing value: <strong>$${data.est_missing_value.toFixed(2)}</strong></span>`;
+        card.dataset.completionData = JSON.stringify(data);
+    } catch(e) {
+        const pct = document.getElementById(`pct-${sid}`);
+        if (pct) pct.textContent = 'Error';
+    }
+});
+
+// View missing
+document.querySelectorAll('.scc-detail-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const sid  = btn.dataset.setId;
+        const card = document.getElementById(`scc-${sid}`);
+        const raw  = card?.dataset.completionData;
+        if (!raw) { showToast('Still loading…','info'); return; }
+        const data = JSON.parse(raw);
+        document.getElementById('missing-modal-title').textContent =
+            `Missing: ${card.dataset.setName || sid}`;
+        const summary = document.getElementById('missing-summary');
+        summary.innerHTML = `<div class="missing-summary-row">
+            <span>${data.owned}/${data.total} owned (${data.pct}%)</span>
+            <span>Est. missing value: <strong class="gold">$${data.est_missing_value.toFixed(2)}</strong></span>
+        </div>`;
+        const grid = document.getElementById('missing-grid');
+        if (!data.missing?.length) {
+            grid.innerHTML = '<div class="results-hint"><span>🎉</span><p>Set complete!</p></div>';
+        } else {
+            grid.innerHTML = data.missing.map(m => `
+                <div class="missing-card-thumb">
+                    ${m.image ? `<img src="${m.image}" alt="${m.name}" loading="lazy">` : `<div class="missing-placeholder">${m.name[0]}</div>`}
+                    <div class="missing-card-info">
+                        <span class="missing-name">${m.name}</span>
+                        <span class="missing-num">#${m.number}</span>
+                        ${m.market_price > 0 ? `<span class="missing-price">$${m.market_price.toFixed(2)}</span>` : ''}
+                    </div>
+                </div>`).join('');
+        }
+        document.getElementById('missing-modal').classList.add('open');
+        document.body.style.overflow = 'hidden';
+    });
+});
+
+// Pin / unpin
+document.querySelectorAll('.pin-btn').forEach(btn => {
+    if (PINNED_IDS.includes(btn.dataset.setId)) btn.classList.add('pinned');
+    btn.addEventListener('click', async () => {
+        const sid  = btn.dataset.setId;
+        const sn   = btn.dataset.setName;
+        const pin  = !btn.classList.contains('pinned');
+        await fetch(`/api/set/${sid}/${pin?'pin':'unpin'}`, {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({set_name: sn})
+        });
+        btn.classList.toggle('pinned', pin);
+        showToast(pin ? `📌 Pinned ${sn}` : `Unpinned ${sn}`, 'info');
+    });
+});
+
+// Modal close
+document.querySelectorAll('.modal-close').forEach(b => {
+    b.addEventListener('click', () => {
+        const t = b.dataset.close || b.closest('.modal-overlay')?.id;
+        if(t){document.getElementById(t)?.classList.remove('open'); document.body.style.overflow='';}
+    });
+});
+document.querySelectorAll('.modal-overlay').forEach(o => {
+    o.addEventListener('click', e => { if(e.target===o){o.classList.remove('open');document.body.style.overflow='';} });
+});
+
+function showToast(msg,type='success'){
+    let t=document.getElementById('toast');
+    if(!t) return;
+    t.textContent=msg; t.className=`toast ${type} show`;
+    clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2800);
+}
+</script>
+</body>
+</html>

@@ -1,371 +1,319 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="{{ theme }}">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PokéVault — My Collection</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#3b82f6">
+<link rel="manifest" href="/manifest.json">
+<title>PokéVault — Collection</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
-<div class="bg-layer">
-    <div class="grid-overlay"></div>
-    <div class="orb orb-1"></div><div class="orb orb-2"></div><div class="orb orb-3"></div>
-</div>
+<div class="bg-layer"><div class="grid-overlay"></div><div class="orb orb-1"></div><div class="orb orb-2"></div><div class="orb orb-3"></div></div>
 
-<!-- ── Header ──────────────────────────────────────────────── -->
+<!-- ── Header ────────────────────────────────────────────────── -->
 <header class="header">
-    <div class="header-inner">
-        <div class="logo"><span class="logo-icon">◈</span><span class="logo-text">PokéVault</span></div>
-        <nav class="header-nav">
-            <a href="{{ url_for('index') }}" class="nav-link active">Collection</a>
-            <a href="{{ url_for('wishlist') }}" class="nav-link">
-                Wishlist {% if wishlist_count %}<span class="nav-badge">{{ wishlist_count }}</span>{% endif %}
-            </a>
-            <a href="{{ url_for('tradelist') }}" class="nav-link">
-                Trade List {% if tradelist_count %}<span class="nav-badge">{{ tradelist_count }}</span>{% endif %}
-            </a>
-        </nav>
-        <div class="header-stats">
-            <div class="stat-pill"><span class="stat-label">Cards</span><span class="stat-val" id="total-cards">{{ total_cards }}</span></div>
-            <div class="stat-pill"><span class="stat-label">Unique</span><span class="stat-val">{{ total_unique }}</span></div>
-            <div class="stat-pill accent"><span class="stat-label">Value</span><span class="stat-val" id="total-value">${{ "%.2f"|format(total_value) }}</span></div>
-        </div>
-        <div class="header-right">
-            <button class="btn-add" id="open-search-modal">+ Add Cards</button>
-            <div class="user-menu">
-                <div class="avatar" style="background:{{ avatar_color }}" id="avatar-btn">{{ username[0].upper() }}</div>
-                <div class="user-dropdown" id="user-dropdown">
-                    <div class="dropdown-user"><strong>{{ username }}</strong><span>Trainer</span></div>
-                    <div class="dropdown-divider"></div>
-                    <button class="dropdown-item" id="open-stats-modal">📊 Stats Dashboard</button>
-                    <button class="dropdown-item" id="open-alerts-modal">🔔 Price Alerts {% if alerts_count %}<span class="nav-badge">{{ alerts_count }}</span>{% endif %}</button>
-                    <div class="dropdown-divider"></div>
-                    <a href="{{ url_for('logout') }}" class="dropdown-item logout">Sign Out</a>
-                </div>
-            </div>
-        </div>
+  <div class="header-inner">
+    <div class="logo"><span class="logo-icon">◈</span><span class="logo-text">PokéVault</span></div>
+    <nav class="header-nav">
+      <a href="/" class="nav-link active">Collection</a>
+      <a href="/wishlist" class="nav-link">Wishlist {% if wishlist_count %}<span class="nav-badge">{{wishlist_count}}</span>{% endif %}</a>
+      <a href="/tradelist" class="nav-link">Trades {% if tradelist_count %}<span class="nav-badge">{{tradelist_count}}</span>{% endif %}</a>
+      <a href="/sets" class="nav-link">Sets</a>
+      <a href="/scan" class="nav-link">🔬 Scan</a>
+    </nav>
+    <div class="header-stats">
+      <div class="stat-pill"><span class="stat-label">Cards</span><span class="stat-val" id="hdr-cards">{{total_cards}}</span></div>
+      <div class="stat-pill"><span class="stat-label">Unique</span><span class="stat-val">{{total_unique}}</span></div>
+      <div class="stat-pill accent"><span class="stat-label">Value</span><span class="stat-val">${{"%.2f"|format(total_value)}}</span></div>
     </div>
+    <div class="header-right">
+      <button class="btn-add" id="open-search-modal">+ Add Cards</button>
+      <div class="user-menu">
+        <div class="avatar" style="background:{{avatar_color}}" id="avatar-btn">{{username[0].upper()}}</div>
+        <div class="user-dropdown" id="user-dropdown">
+          <div class="dropdown-user"><strong>{{username}}</strong><span>Trainer</span></div>
+          <div class="dropdown-divider"></div>
+          <button class="dropdown-item" id="open-stats-modal">📊 Stats Dashboard</button>
+          <button class="dropdown-item" id="open-alerts-modal">🔔 Price Alerts {% if alerts_count %}<span class="nav-badge">{{alerts_count}}</span>{% endif %}</button>
+          <div class="dropdown-divider"></div>
+          <button class="dropdown-item" id="open-import-modal">📥 Import Collection</button>
+          <a href="/export/csv" class="dropdown-item">📤 Export CSV</a>
+          <a href="/export/json" class="dropdown-item">📤 Export JSON</a>
+          <div class="dropdown-divider"></div>
+          <a href="/logout" class="dropdown-item logout">Sign Out</a>
+        </div>
+      </div>
+    </div>
+  </div>
 </header>
 
-<!-- ── Toolbar ──────────────────────────────────────────────── -->
-<div class="toolbar">
-    <div class="toolbar-inner">
-        <div class="search-wrap">
-            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-            <input type="text" class="search-input" id="col-search" placeholder="Filter collection…">
-        </div>
-        <div class="filter-group">
-            <select class="filter-select" id="filter-type">
-                <option value="">All Types</option>
-                <option>Fire</option><option>Water</option><option>Grass</option><option>Electric</option>
-                <option>Psychic</option><option>Normal</option><option>Colorless</option><option>Fighting</option>
-                <option>Poison</option><option>Dragon</option><option>Dark</option><option>Darkness</option>
-                <option>Steel</option><option>Metal</option><option>Ice</option><option>Fairy</option>
-                <option>Lightning</option>
-            </select>
-            <select class="filter-select" id="filter-rarity">
-                <option value="">All Rarities</option>
-                {% for r in rarities %}<option>{{ r }}</option>{% endfor %}
-            </select>
-            <select class="filter-select" id="filter-condition">
-                <option value="">All Conditions</option>
-                <option>Near Mint</option><option>Lightly Played</option>
-                <option>Moderately Played</option><option>Heavily Played</option><option>Damaged</option>
-            </select>
-            <button class="filter-btn {% if favorites %}{% endif %}" id="toggle-favorites" title="Show favorites">⭐ Favorites</button>
-        </div>
-        <div class="sort-wrap">
-            <select class="filter-select" id="sort-by">
-                <option value="newest">Newest</option>
-                <option value="name">Name A–Z</option>
-                <option value="value-desc">Value ↓</option>
-                <option value="value-asc">Value ↑</option>
-                <option value="qty-desc">Qty ↓</option>
-            </select>
-        </div>
-        <span class="card-count-label" id="count-label">{{ total_unique }} card{{ 's' if total_unique != 1 }}</span>
+<!-- ── Pinned set progress bars ──────────────────────────────── -->
+{% if pinned_sets %}
+<div class="pinned-sets-bar">
+  <div class="pinned-sets-inner" id="pinned-sets-container">
+    {% for ps in pinned_sets %}
+    <div class="pinned-set-chip" data-set-id="{{ps.set_id}}">
+      <span class="ps-name">{{ps.set_name}}</span>
+      <div class="ps-track"><div class="ps-fill" style="width:0%" id="psfill-{{ps.set_id}}"></div></div>
+      <span class="ps-pct" id="pspct-{{ps.set_id}}">…</span>
     </div>
-</div>
-
-<!-- ── Collection Grid ──────────────────────────────────────── -->
-<main class="main">
-{% if cards %}
-<div class="cards-grid" id="cards-grid">
-{% for card in cards %}
-<div class="card-item"
-     data-name="{{ card.name|lower }}"
-     data-type="{{ (card.pokemon_type or '')|lower }}"
-     data-rarity="{{ card.rarity or '' }}"
-     data-condition="{{ card.condition or '' }}"
-     data-value="{{ card.market_price or 0 }}"
-     data-qty="{{ card.quantity }}"
-     data-fav="{{ card.is_favorite }}"
-     data-ts="{{ card.created_at }}">
-    <div class="card-inner">
-        <div class="card-shine"></div>
-        <div class="card-holographic"></div>
-
-        {% if card.image_large or card.image_small %}
-        <div class="card-portrait img-portrait">
-            <img src="{{ card.image_large or card.image_small }}" alt="{{ card.name }}" loading="lazy">
-        </div>
-        {% else %}
-        <div class="card-portrait text-portrait">
-            <div class="portrait-bg type-bg-{{ (card.pokemon_type or 'normal')|lower|replace(' ','_') }}">
-                <span class="portrait-initial">{{ card.name[0].upper() }}</span>
-            </div>
-        </div>
-        {% endif %}
-
-        <div class="card-meta">
-            <h3 class="card-name">{{ card.name }}</h3>
-            <p class="card-set-line">{{ card.set_name or '—' }}{% if card.card_number %} · #{{ card.card_number }}{% endif %}{% if card.hp %} · {{ card.hp }} HP{% endif %}</p>
-            <div class="card-badges">
-                {% if card.pokemon_type %}<span class="badge type-{{ card.pokemon_type|lower|replace(' ','_') }}">{{ card.pokemon_type }}</span>{% endif %}
-                {% if card.rarity %}<span class="badge rarity-badge">{{ card.rarity }}</span>{% endif %}
-            </div>
-        </div>
-
-        {% if card.market_price and card.market_price > 0 %}
-        <div class="card-price">${{ "%.2f"|format(card.market_price) }}</div>
-        {% endif %}
-
-        <div class="qty-bar">
-            <button class="qty-btn minus" data-id="{{ card.id }}">−</button>
-            <span class="qty-num" id="qty-{{ card.id }}">{{ card.quantity }}</span>
-            <button class="qty-btn plus" data-id="{{ card.id }}">+</button>
-        </div>
-
-        <!-- Action buttons overlay -->
-        <div class="card-actions">
-            <button class="action-btn fav-btn {% if card.is_favorite %}active{% endif %}" data-id="{{ card.id }}" title="Favorite">⭐</button>
-            <button class="action-btn alert-btn" data-id="{{ card.id }}" data-name="{{ card.name }}" data-price="{{ card.market_price or 0 }}" title="Price alert">🔔</button>
-            <button class="action-btn delete-btn" data-id="{{ card.id }}" title="Remove">✕</button>
-        </div>
-    </div>
-</div>
-{% endfor %}
-</div>
-{% else %}
-<div class="empty-state">
-    <div class="empty-pokeball"><div class="pb-top"></div><div class="pb-mid"></div><div class="pb-bot"></div><div class="pb-center"></div></div>
-    <h2>Your vault is empty</h2>
-    <p>Search for any Pokémon card to start building your collection.</p>
-    <button class="btn-add large" id="open-search-empty">+ Add Your First Card</button>
+    {% endfor %}
+  </div>
 </div>
 {% endif %}
+
+<!-- ── Toolbar ───────────────────────────────────────────────── -->
+<div class="toolbar">
+  <div class="toolbar-inner">
+    <div class="search-wrap">
+      <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" class="search-input" id="col-search" placeholder="Filter collection…">
+    </div>
+    <div class="filter-group">
+      <select class="filter-select" id="filter-type">
+        <option value="">All Types</option>
+        <option>Fire</option><option>Water</option><option>Grass</option><option>Electric</option>
+        <option>Psychic</option><option>Normal</option><option>Colorless</option><option>Fighting</option>
+        <option>Poison</option><option>Dragon</option><option>Dark</option><option>Darkness</option>
+        <option>Steel</option><option>Metal</option><option>Ice</option><option>Fairy</option><option>Lightning</option>
+      </select>
+      <select class="filter-select" id="filter-rarity">
+        <option value="">All Rarities</option>
+        {% for r in rarities %}<option>{{r}}</option>{% endfor %}
+      </select>
+      <select class="filter-select" id="filter-condition">
+        <option value="">All Conditions</option>
+        <option>Near Mint</option><option>Lightly Played</option>
+        <option>Moderately Played</option><option>Heavily Played</option><option>Damaged</option>
+      </select>
+      <button class="filter-btn" id="toggle-favorites">⭐ Favorites</button>
+    </div>
+    <select class="filter-select" id="sort-by">
+      <option value="newest">Newest</option><option value="name">Name A–Z</option>
+      <option value="value-desc">Value ↓</option><option value="value-asc">Value ↑</option>
+      <option value="qty-desc">Qty ↓</option>
+    </select>
+    <span class="card-count-label" id="count-label">{{total_unique}} card{{'s' if total_unique != 1}}</span>
+  </div>
+</div>
+
+<!-- ── Cards Grid ────────────────────────────────────────────── -->
+<main class="main">
+  <div class="cards-grid" id="cards-grid">
+    {% for card in cards %}
+    {% include '_card.html' %}
+    {% endfor %}
+  </div>
+  <div id="scroll-sentinel" style="height:1px;margin-top:20px;"></div>
+  <div id="loading-more" style="display:none;text-align:center;padding:20px;">
+    <div class="spinner-inline"></div>
+  </div>
+  {% if not cards %}
+  <div class="empty-state" id="empty-state">
+    <div class="empty-pokeball"><div class="pb-top"></div><div class="pb-mid"></div><div class="pb-bot"></div><div class="pb-center"></div></div>
+    <h2>Your vault is empty</h2>
+    <p>Search for any Pokémon card and press Enter to start building your collection.</p>
+    <button class="btn-add large" id="open-search-empty">+ Add Your First Card</button>
+  </div>
+  {% endif %}
 </main>
 
-<!-- ═══════════════════════════════════════════════════════════ -->
-<!--  MODALS                                                     -->
-<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<!-- MODALS                                                       -->
+<!-- ════════════════════════════════════════════════════════════ -->
 
-<!-- ── Search & Add Modal ───────────────────────────────────── -->
+<!-- Search Modal -->
 <div class="modal-overlay" id="search-modal">
 <div class="modal search-modal-inner">
-    <div class="modal-header">
-        <h2>Add Cards</h2>
-        <div class="modal-header-right">
-            <span class="selection-count" id="selection-count" style="display:none">0 selected</span>
-            <button class="modal-close" id="close-search-modal">✕</button>
-        </div>
+  <div class="modal-header">
+    <h2>Search Cards</h2>
+    <div class="modal-header-right">
+      <span class="selection-count" id="selection-count" style="display:none"></span>
+      <button class="modal-close" data-close="search-modal">✕</button>
     </div>
+  </div>
 
-    <!-- Search bar -->
-    <div class="api-search-wrap">
-        <div class="api-search-fields">
-            <div class="api-field-wrap">
-                <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-                <input type="text" id="api-search-input" placeholder="Pokémon name… e.g. Charizard" autocomplete="off">
-            </div>
-            <div class="api-field-wrap number-field">
-                <span class="field-label">#</span>
-                <input type="text" id="api-number-input" placeholder="Card # e.g. 004/102" autocomplete="off">
-            </div>
-        </div>
-        <div class="search-spinner" id="search-spinner"></div>
+  <div class="api-search-wrap">
+    <div class="api-search-fields">
+      <div class="api-field-wrap flex-1">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input type="text" id="api-search-input" placeholder="Pokémon name… press Enter to search" autocomplete="off">
+      </div>
+      <div class="api-field-wrap number-field">
+        <span class="field-label">#</span>
+        <input type="text" id="api-number-input" placeholder="Card # e.g. SV107 or SV107,SV108" autocomplete="off">
+      </div>
+      <button class="btn-search-go" id="btn-search-go">Search</button>
     </div>
+    <p class="search-hint-text" id="search-hint-text">Enter a name, a card number, or comma-separated numbers — press <kbd>Enter</kbd> or click Search</p>
+    <div class="search-spinner" id="search-spinner"></div>
+  </div>
 
-    <!-- Multi-select cart banner -->
-    <div class="cart-banner" id="cart-banner" style="display:none">
-        <span id="cart-info">0 cards selected</span>
-        <div class="cart-actions">
-            <select id="bulk-condition">
-                <option>Near Mint</option><option>Lightly Played</option>
-                <option>Moderately Played</option><option>Heavily Played</option><option>Damaged</option>
-            </select>
-            <button class="btn-submit" id="btn-add-all">Add All to Vault</button>
-            <button class="btn-cancel-sm" id="btn-clear-cart">Clear</button>
-        </div>
+  <div class="cart-banner" id="cart-banner" style="display:none">
+    <span id="cart-info">0 selected</span>
+    <div class="cart-actions">
+      <select id="bulk-condition">
+        <option>Near Mint</option><option>Lightly Played</option>
+        <option>Moderately Played</option><option>Heavily Played</option><option>Damaged</option>
+      </select>
+      <select id="bulk-variant">
+        <option value="Normal">Normal</option><option value="Holofoil">Holofoil</option>
+        <option value="Reverse Holo">Reverse Holo</option><option value="1st Edition">1st Edition</option>
+        <option value="1st Edition Holo">1st Edition Holo</option><option value="Full Art">Full Art</option>
+      </select>
+      <button class="btn-submit" id="btn-add-all">Add All (0)</button>
+      <button class="btn-cancel-sm" id="btn-clear-cart">Clear</button>
     </div>
+  </div>
 
-    <!-- Results -->
-    <div class="api-results" id="api-results">
-        <div class="results-hint"><span>🔍</span><p>Search by name, or card number (e.g. 004/102)</p></div>
-    </div>
+  <div class="api-results" id="api-results">
+    <div class="results-hint"><span>🔍</span><p>Enter a name above and press Enter or click Search</p></div>
+  </div>
 
-    <!-- Single selected card panel -->
-    <div class="selected-card-panel" id="selected-panel" style="display:none">
-        <div class="selected-preview">
-            <img id="sel-img" src="" alt="">
-            <div class="sel-info">
-                <h3 id="sel-name"></h3>
-                <p id="sel-set"></p>
-                <p id="sel-details"></p>
-                <p class="sel-price" id="sel-price"></p>
-            </div>
-        </div>
-        <div class="sel-options">
-            <div class="sel-field">
-                <label>Condition</label>
-                <select id="sel-condition">
-                    <option>Near Mint</option><option>Lightly Played</option>
-                    <option>Moderately Played</option><option>Heavily Played</option><option>Damaged</option>
-                </select>
-            </div>
-            <div class="sel-field">
-                <label>Qty</label>
-                <div class="qty-picker">
-                    <button id="sel-qty-minus">−</button>
-                    <span id="sel-qty-val">1</span>
-                    <button id="sel-qty-plus">+</button>
-                </div>
-            </div>
-        </div>
-        <div class="sel-panel-actions">
-            <button class="btn-submit" id="btn-add-to-vault">Add to Vault</button>
-            <button class="btn-outline" id="btn-add-to-wishlist">+ Wishlist</button>
-            <button class="btn-outline" id="btn-add-to-tradelist">⇄ Trade</button>
-        </div>
+  <div class="selected-card-panel" id="selected-panel" style="display:none">
+    <div class="selected-preview">
+      <img id="sel-img" src="" alt="">
+      <div class="sel-info">
+        <h3 id="sel-name"></h3>
+        <p id="sel-set"></p>
+        <p id="sel-details"></p>
+        <p class="sel-price" id="sel-price"></p>
+        <div id="sel-variants" class="variant-chips"></div>
+      </div>
     </div>
+    <div class="sel-options">
+      <div class="sel-field"><label>Variant</label>
+        <select id="sel-variant">
+          <option value="Normal">Normal</option><option value="Holofoil">Holofoil</option>
+          <option value="Reverse Holo">Reverse Holo</option><option value="1st Edition">1st Edition</option>
+          <option value="1st Edition Holo">1st Edition Holo</option><option value="Full Art">Full Art</option>
+        </select>
+      </div>
+      <div class="sel-field"><label>Condition</label>
+        <select id="sel-condition">
+          <option>Near Mint</option><option>Lightly Played</option>
+          <option>Moderately Played</option><option>Heavily Played</option><option>Damaged</option>
+        </select>
+      </div>
+      <div class="sel-field"><label>Qty</label>
+        <div class="qty-picker">
+          <button id="sel-qty-minus">−</button>
+          <span id="sel-qty-val">1</span>
+          <button id="sel-qty-plus">+</button>
+        </div>
+      </div>
+    </div>
+    <div class="sel-panel-actions">
+      <button class="btn-submit" id="btn-add-to-vault">Add to Vault</button>
+      <button class="btn-outline" id="btn-add-to-wishlist">⭐ Wishlist</button>
+      <button class="btn-outline" id="btn-add-to-tradelist">⇄ Trade</button>
+    </div>
+  </div>
 </div>
 </div>
 
-<!-- ── Stats Modal ──────────────────────────────────────────── -->
+<!-- Stats Modal -->
 <div class="modal-overlay" id="stats-modal">
 <div class="modal stats-modal-inner">
-    <div class="modal-header">
-        <h2>Collection Stats</h2>
-        <button class="modal-close" data-close="stats-modal">✕</button>
-    </div>
-    <div class="stats-grid">
-        <div class="stat-card big">
-            <div class="stat-card-label">Total Market Value</div>
-            <div class="stat-card-val gold">${{ "%.2f"|format(total_value) }}</div>
-        </div>
-        <div class="stat-card big">
-            <div class="stat-card-label">Total Cards</div>
-            <div class="stat-card-val">{{ total_cards }}</div>
-        </div>
-        <div class="stat-card big">
-            <div class="stat-card-label">Unique Cards</div>
-            <div class="stat-card-val">{{ total_unique }}</div>
-        </div>
-
-        {% if top_value %}
-        <div class="stat-card wide">
-            <div class="stat-card-label">💎 Most Valuable Cards</div>
-            <div class="top-value-list">
-                {% for c in top_value %}
-                <div class="top-value-row">
-                    {% if c.image_small %}<img src="{{ c.image_small }}" alt="">{% endif %}
-                    <div class="tvc-info">
-                        <strong>{{ c.name }}</strong>
-                        <span>{{ c.set_name }}{% if c.card_number %} · #{{ c.card_number }}{% endif %}</span>
-                    </div>
-                    <div class="tvc-price">${{ "%.2f"|format(c.market_price) }}</div>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-        {% endif %}
-
-        {% if type_stats %}
-        <div class="stat-card">
-            <div class="stat-card-label">Types in Collection</div>
-            <div class="type-bars">
-                {% set max_cnt = type_stats[0].cnt %}
-                {% for t in type_stats %}
-                <div class="type-bar-row">
-                    <span class="type-bar-label">{{ t.pokemon_type }}</span>
-                    <div class="type-bar-track">
-                        <div class="type-bar-fill type-fill-{{ t.pokemon_type|lower|replace(' ','_') }}" style="width:{{ (t.cnt / max_cnt * 100)|int }}%"></div>
-                    </div>
-                    <span class="type-bar-num">{{ t.cnt }}</span>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-        {% endif %}
-
-        {% if set_stats %}
-        <div class="stat-card">
-            <div class="stat-card-label">Top Sets</div>
-            <div class="set-list">
-                {% for s in set_stats %}
-                <div class="set-row">
-                    <span class="set-name">{{ s.set_name }}</span>
-                    <span class="set-cnt">{{ s.cnt }}</span>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-        {% endif %}
-    </div>
+  <div class="modal-header"><h2>Stats</h2><button class="modal-close" data-close="stats-modal">✕</button></div>
+  <div class="stats-grid">
+    <div class="stat-card big"><div class="stat-card-label">Total Value</div><div class="stat-card-val gold">${{"%.2f"|format(total_value)}}</div></div>
+    <div class="stat-card big"><div class="stat-card-label">Total Cards</div><div class="stat-card-val">{{total_cards}}</div></div>
+    <div class="stat-card big"><div class="stat-card-label">Unique Cards</div><div class="stat-card-val">{{total_unique}}</div></div>
+    {% if top_value %}
+    <div class="stat-card wide"><div class="stat-card-label">💎 Most Valuable</div><div class="top-value-list">
+      {% for c in top_value %}
+      <div class="top-value-row">
+        {% if c.image_small %}<img src="{{c.image_small}}" alt="">{% endif %}
+        <div class="tvc-info"><strong>{{c.name}}</strong><span>{{c.set_name}}{% if c.card_number %} · #{{c.card_number}}{% endif %}</span></div>
+        <div class="tvc-price">${{"%.2f"|format(c.market_price)}}</div>
+      </div>
+      {% endfor %}
+    </div></div>
+    {% endif %}
+    {% if type_stats %}
+    <div class="stat-card"><div class="stat-card-label">Types</div><div class="type-bars">
+      {% set mc = type_stats[0].c %}
+      {% for t in type_stats %}
+      <div class="type-bar-row">
+        <span class="type-bar-label">{{t.pokemon_type}}</span>
+        <div class="type-bar-track"><div class="type-bar-fill type-fill-{{t.pokemon_type|lower|replace(' ','_')}}" style="width:{{(t.c/mc*100)|int}}%"></div></div>
+        <span class="type-bar-num">{{t.c}}</span>
+      </div>
+      {% endfor %}
+    </div></div>
+    {% endif %}
+    {% if set_stats %}
+    <div class="stat-card"><div class="stat-card-label">Top Sets</div><div class="set-list">
+      {% for s in set_stats %}
+      <div class="set-row"><span class="set-name">{{s.set_name}}</span><span class="set-cnt">{{s.c}}</span></div>
+      {% endfor %}
+    </div></div>
+    {% endif %}
+  </div>
 </div>
 </div>
 
-<!-- ── Price Alerts Modal ────────────────────────────────────── -->
+<!-- Alerts Modal -->
 <div class="modal-overlay" id="alerts-modal">
 <div class="modal alerts-modal-inner">
-    <div class="modal-header">
-        <h2>Price Alerts</h2>
-        <button class="modal-close" data-close="alerts-modal">✕</button>
-    </div>
-    <p class="modal-hint">Set a target price on any card in your collection. We'll flag it when the market price crosses your threshold.</p>
-    <div id="alerts-list" class="alerts-list">
-        <div class="results-hint"><span>🔔</span><p>No alerts set yet. Use the 🔔 button on any card.</p></div>
-    </div>
+  <div class="modal-header"><h2>Price Alerts</h2><button class="modal-close" data-close="alerts-modal">✕</button></div>
+  <p class="modal-hint" style="padding:0 26px 12px">Set target prices on cards you own. Alerts fire when market price crosses your threshold.</p>
+  <div id="alerts-list" class="alerts-list"><div class="results-hint"><span>🔔</span><p>No alerts yet. Use the 🔔 button on any card.</p></div></div>
 </div>
 </div>
 
-<!-- ── Set Alert Modal (triggered from card) ─────────────────── -->
+<!-- Set Alert -->
 <div class="modal-overlay" id="alert-set-modal">
 <div class="modal alert-set-inner">
-    <div class="modal-header">
-        <h2>Set Price Alert</h2>
-        <button class="modal-close" data-close="alert-set-modal">✕</button>
+  <div class="modal-header"><h2>Price Alert</h2><button class="modal-close" data-close="alert-set-modal">✕</button></div>
+  <div class="alert-set-body">
+    <p id="alert-card-name" class="alert-card-label"></p>
+    <p class="alert-current-price">Market price: <span id="alert-current-val" class="gold"></span></p>
+    <div class="sel-options">
+      <div class="sel-field"><label>Alert when</label>
+        <select id="alert-direction"><option value="below">Goes below ↓</option><option value="above">Goes above ↑</option></select>
+      </div>
+      <div class="sel-field"><label>Target ($)</label>
+        <input type="number" id="alert-target" min="0" step="0.01" placeholder="0.00">
+      </div>
     </div>
-    <div class="alert-set-body">
-        <p id="alert-card-name" class="alert-card-label"></p>
-        <p class="alert-current-price">Current price: <span id="alert-current-val" class="gold"></span></p>
-        <div class="sel-options">
-            <div class="sel-field">
-                <label>Alert when price goes</label>
-                <select id="alert-direction">
-                    <option value="below">Below target ↓</option>
-                    <option value="above">Above target ↑</option>
-                </select>
-            </div>
-            <div class="sel-field">
-                <label>Target Price ($)</label>
-                <input type="number" id="alert-target" min="0" step="0.01" placeholder="e.g. 25.00">
-            </div>
-        </div>
-        <button class="btn-submit wide" id="btn-save-alert">Save Alert</button>
+    <button class="btn-submit wide" id="btn-save-alert">Save Alert</button>
+  </div>
+</div>
+</div>
+
+<!-- Import Modal -->
+<div class="modal-overlay" id="import-modal">
+<div class="modal import-modal-inner">
+  <div class="modal-header"><h2>Import Collection</h2><button class="modal-close" data-close="import-modal">✕</button></div>
+  <div class="import-body">
+    <p class="modal-hint" style="margin-bottom:16px">Import from a CSV or JSON file (PokéVault export, TCGPlayer, or spreadsheet).</p>
+    <div class="import-drop" id="import-drop">
+      <span>📂</span>
+      <p>Drag & drop or click to select</p>
+      <p class="import-formats">.csv or .json</p>
     </div>
+    <input type="file" id="import-file" accept=".csv,.json" style="display:none">
+    <div id="import-result" style="display:none;margin-top:14px;"></div>
+    <div class="form-actions" style="margin-top:16px;">
+      <button class="btn-cancel" data-close="import-modal">Cancel</button>
+      <button class="btn-submit" id="btn-import-submit">Import</button>
+    </div>
+  </div>
 </div>
 </div>
 
 <div class="toast" id="toast"></div>
 <script>
-    const WISHLIST_URL   = "{{ url_for('wishlist_add') }}";
-    const TRADELIST_URL  = "{{ url_for('tradelist_add') }}";
-    const ALERTS_API_URL = "{{ url_for('api_alerts') }}";
-    const ALERT_ADD_URL  = "{{ url_for('alert_add') }}";
+const WISHLIST_URL   = "/wishlist/add";
+const TRADELIST_URL  = "/tradelist/add";
+const ALERTS_API_URL = "/api/alerts";
+const ALERT_ADD_URL  = "/alerts/add";
+const PINNED_SETS    = {{ pinned_sets | tojson }};
 </script>
-<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+<script src="/static/js/main.js"></script>
 </body>
 </html>

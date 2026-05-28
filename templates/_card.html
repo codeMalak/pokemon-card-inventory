@@ -1,0 +1,47 @@
+<div class="card-item"
+     data-id="{{card.id}}"
+     data-name="{{card.name|lower}}"
+     data-type="{{(card.pokemon_type or '')|lower}}"
+     data-rarity="{{card.rarity or ''}}"
+     data-condition="{{card.condition or ''}}"
+     data-value="{{card.market_price or 0}}"
+     data-qty="{{card.quantity}}"
+     data-fav="{{card.is_favorite}}"
+     data-ts="{{card.created_at}}">
+  <div class="card-inner">
+    <div class="card-shine"></div><div class="card-holographic"></div>
+    {% if card.image_large or card.image_small %}
+    <div class="card-portrait img-portrait">
+      <img src="{{card.image_large or card.image_small}}" alt="{{card.name}}" loading="lazy">
+    </div>
+    {% else %}
+    <div class="card-portrait text-portrait">
+      <div class="portrait-bg type-bg-{{(card.pokemon_type or 'normal')|lower|replace(' ','_')}}">
+        <span class="portrait-initial">{{card.name[0].upper()}}</span>
+      </div>
+    </div>
+    {% endif %}
+    <div class="card-meta">
+      <h3 class="card-name">{{card.name}}</h3>
+      <p class="card-set-line">{{card.set_name or '—'}}{% if card.card_number %} · #{{card.card_number}}{% endif %}{% if card.hp %} · {{card.hp}} HP{% endif %}</p>
+      <div class="card-badges">
+        {% if card.pokemon_type %}<span class="badge type-{{card.pokemon_type|lower|replace(' ','_')}}">{{card.pokemon_type}}</span>{% endif %}
+        {% if card.rarity %}<span class="badge rarity-badge">{{card.rarity}}</span>{% endif %}
+        {% if card.variant and card.variant != 'Normal' %}<span class="badge variant-badge">{{card.variant}}</span>{% endif %}
+      </div>
+    </div>
+    {% if card.market_price and card.market_price > 0 %}
+    <div class="card-price">${{"%.2f"|format(card.market_price)}}</div>
+    {% endif %}
+    <div class="qty-bar">
+      <button class="qty-btn minus" data-id="{{card.id}}">−</button>
+      <span class="qty-num" id="qty-{{card.id}}">{{card.quantity}}</span>
+      <button class="qty-btn plus" data-id="{{card.id}}">+</button>
+    </div>
+    <div class="card-actions">
+      <button class="action-btn fav-btn {{'active' if card.is_favorite}}" data-id="{{card.id}}" title="Favorite">⭐</button>
+      <button class="action-btn alert-btn" data-id="{{card.id}}" data-name="{{card.name}}" data-price="{{card.market_price or 0}}" title="Price alert">🔔</button>
+      <button class="action-btn delete-btn" data-id="{{card.id}}" title="Remove">✕</button>
+    </div>
+  </div>
+</div>
