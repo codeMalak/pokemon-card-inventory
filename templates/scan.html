@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="{{ theme }}">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PokéVault — Scan Card</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/style.css">
+<style>
+.scan-layout{display:grid;grid-template-columns:340px 1fr;gap:28px;align-items:start;padding-bottom:60px;}
+.scan-panel{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:24px;display:flex;flex-direction:column;gap:18px;}
+.scan-panel h2{font-family:var(--font-d);font-size:24px;letter-spacing:2px;margin:0;}
+.drop-zone{border:2px dashed var(--border-b);border-radius:14px;padding:36px 20px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;display:flex;flex-direction:column;align-items:center;gap:10px;}
+.drop-zone:hover,.drop-zone.drag-over{border-color:var(--accent);background:rgba(99,102,241,.06);}
+.drop-zone .dz-icon{font-size:40px;line-height:1;}
+.drop-zone p{font-size:13px;color:var(--muted);margin:0;}
+.drop-zone strong{color:var(--text);}
+#preview-wrap{display:none;position:relative;}
+#preview-img{width:100%;border-radius:10px;display:block;max-height:320px;object-fit:contain;}
+.preview-clear{position:absolute;top:6px;right:6px;background:rgba(0,0,0,.65);color:#fff;border:none;border-radius:50%;width:26px;height:26px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;}
+.scan-btn{width:100%;padding:13px;font-size:15px;font-weight:600;background:var(--accent);color:#fff;border:none;border-radius:12px;cursor:pointer;transition:opacity .15s;}
+.scan-btn:disabled{opacity:.45;cursor:not-allowed;}
+.scan-status{font-size:13px;color:var(--muted);text-align:center;min-height:20px;}
+.extracted-box{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;font-size:13px;display:none;}
+.extracted-box h4{margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);}
+.extracted-row{display:flex;gap:8px;align-items:center;}
+.extracted-row label{color:var(--muted);width:60px;flex-shrink:0;}
+.extracted-row input{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:5px 8px;color:var(--text);font-size:13px;}
+.scan-results-panel{display:flex;flex-direction:column;gap:14px;}
+.scan-results-panel h3{font-family:var(--font-d);font-size:22px;letter-spacing:2px;margin:0;}
+.scan-results-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:14px;}
+.scan-result-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;cursor:pointer;transition:border-color .15s,transform .15s;}
+.scan-result-card:hover{border-color:var(--accent);transform:translateY(-3px);}
+.scan-result-card.selected{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent);}
+.scan-result-card img{width:100%;display:block;aspect-ratio:2/3;object-fit:cover;}
+.scan-result-card .src-info{padding:8px;display:flex;flex-direction:column;gap:3px;}
+.src-name{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.src-set{font-size:10px;color:var(--muted);}
+.src-price{font-size:11px;color:#4ade80;font-weight:600;}
+.scan-add-bar{display:none;background:var(--surface);border:1px solid var(--accent);border-radius:14px;padding:16px 20px;display:none;flex-direction:column;gap:12px;}
+.scan-add-bar.visible{display:flex;}
+.scan-add-bar h4{margin:0;font-size:14px;}
+.scan-add-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+.scan-add-row select,.scan-add-row input{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text);font-size:13px;}
+.scan-add-row input[type=number]{width:70px;}
+.scan-results-empty{text-align:center;padding:48px 20px;color:var(--muted);font-size:14px;}
+@media(max-width:760px){
+  .scan-layout{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+<div class="bg-layer"><div class="grid-overlay"></div><div class="orb orb-1"></div><div class="orb orb-2"></div><div class="orb orb-3"></div></div>
+<header class="header">
+  <div class="header-inner">
+    <div class="logo"><span class="logo-icon">◈</span><span class="logo-text">PokéVault</span></div>
+    <nav class="header-nav">
+      <a href="/" class="nav-link">Collection</a>
+      <a href="/wishlist" class="nav-link">Wishlist</a>
+      <a href="/tradelist" class="nav-link">Trades</a>
+      <a href="/sets" class="nav-link">Sets</a>
+      <a href="/scan" class="nav-link active">🔬 Scan</a>
+    </nav>
+    <div class="header-right">
+      <div class="avatar" style="background:{{ avatar_color }}">{{ username[0].upper() }}</div>
+      <a href="/logout" class="btn-outline-sm">Sign Out</a>
+    </div>
+  </div>
+</header>
+
+<main class="main">
+  <div class="page-hero">
+    <h1 class="page-title">🔬 Card Scanner</h1>
+    <p class="page-sub">Upload a photo of a card to identify it and add it to your vault.</p>
+  </div>
+
+  <div class="scan-layout">
+
+    <!-- Left panel: upload + controls -->
+    <div class="scan-panel">
+      <h2>Upload Card</h2>
+
+      <div class="drop-zone" id="drop-zone">
+        <div class="dz-icon">📷</div>
+        <p><strong>Click to choose</strong> or drag &amp; drop</p>
+        <p>JPG, PNG, WEBP — max 10 MB</p>
+        <input type="file" id="file-input" accept="image/*" style="display:none">
+      </div>
+
+      <div id="preview-wrap">
+        <img id="preview-img" alt="Preview">
+        <button class="preview-clear" id="btn-clear-img" title="Remove">✕</button>
+      </div>
+
+      <div class="extracted-box" id="extracted-box">
+        <h4>OCR Result — edit if needed</h4>
+        <div class="extracted-row">
+          <label>Name</label>
+          <input type="text" id="ocr-name" placeholder="Pokémon name">
+        </div>
+        <div class="extracted-row" style="margin-top:8px">
+          <label>Number</label>
+          <input type="text" id="ocr-number" placeholder="e.g. 25/102">
+        </div>
+      </div>
+
+      <button class="scan-btn" id="btn-scan" disabled>🔬 Scan Card</button>
+      <div class="scan-status" id="scan-status"></div>
+    </div>
+
+    <!-- Right panel: results -->
+    <div class="scan-results-panel" id="results-panel">
+      <h3>Results</h3>
+
+      <div id="results-area">
+        <div class="scan-results-empty">Upload a card image and click Scan to identify it.</div>
+      </div>
+
+      <!-- Add-to-vault bar (shown when a result card is selected) -->
+      <div class="scan-add-bar" id="scan-add-bar">
+        <h4 id="scan-add-name">Add to Vault</h4>
+        <div class="scan-add-row">
+          <select id="scan-condition">
+            <option>Near Mint</option><option>Lightly Played</option>
+            <option>Moderately Played</option><option>Heavily Played</option><option>Damaged</option>
+          </select>
+          <select id="scan-variant">
+            <option value="Normal">Normal</option><option value="Holofoil">Holofoil</option>
+            <option value="Reverse Holo">Reverse Holo</option>
+            <option value="1st Edition">1st Edition</option>
+          </select>
+          <input type="number" id="scan-qty" value="1" min="1" max="999">
+          <button class="scan-btn" id="btn-add-scanned" style="width:auto;padding:9px 20px;">+ Add</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const dropZone   = document.getElementById('drop-zone');
+const fileInput  = document.getElementById('file-input');
+const previewWrap= document.getElementById('preview-wrap');
+const previewImg = document.getElementById('preview-img');
+const btnClear   = document.getElementById('btn-clear-img');
+const btnScan    = document.getElementById('btn-scan');
+const scanStatus = document.getElementById('scan-status');
+const extBox     = document.getElementById('extracted-box');
+const ocrName    = document.getElementById('ocr-name');
+const ocrNumber  = document.getElementById('ocr-number');
+const resultsArea= document.getElementById('results-area');
+const addBar     = document.getElementById('scan-add-bar');
+const addName    = document.getElementById('scan-add-name');
+
+let selectedFile = null;
+let selectedCard = null;
+
+function showToast(msg, type='success') {
+    const t = document.getElementById('toast');
+    if (!t) return;
+    t.textContent = msg; t.className = `toast ${type} show`;
+    clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ── File selection ──────────────────────────────────────────────
+dropZone.addEventListener('click', () => fileInput.click());
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+    e.preventDefault(); dropZone.classList.remove('drag-over');
+    const f = e.dataTransfer.files[0];
+    if (f) loadFile(f);
+});
+fileInput.addEventListener('change', e => { if (e.target.files[0]) loadFile(e.target.files[0]); });
+
+btnClear.addEventListener('click', () => {
+    selectedFile = null;
+    previewWrap.style.display = 'none';
+    dropZone.style.display    = '';
+    extBox.style.display      = 'none';
+    btnScan.disabled          = true;
+    scanStatus.textContent    = '';
+    resultsArea.innerHTML     = '<div class="scan-results-empty">Upload a card image and click Scan to identify it.</div>';
+    addBar.classList.remove('visible');
+    fileInput.value = '';
+});
+
+function loadFile(file) {
+    if (!file.type.startsWith('image/')) { showToast('Please select an image file', 'error'); return; }
+    selectedFile = file;
+    const url = URL.createObjectURL(file);
+    previewImg.src        = url;
+    previewWrap.style.display = 'block';
+    dropZone.style.display    = 'none';
+    btnScan.disabled          = false;
+    scanStatus.textContent    = '';
+}
+
+// ── Scan ────────────────────────────────────────────────────────
+btnScan.addEventListener('click', async () => {
+    if (!selectedFile) return;
+    btnScan.disabled       = true;
+    scanStatus.textContent = '⏳ Scanning…';
+    resultsArea.innerHTML  = '<div class="scan-results-empty">⏳ Reading card…</div>';
+    addBar.classList.remove('visible');
+    extBox.style.display   = 'none';
+
+    const fd = new FormData();
+    fd.append('image', selectedFile);
+    try {
+        const res  = await fetch('/api/scan', { method: 'POST', body: fd });
+        const data = await res.json();
+
+        if (data.error) {
+            scanStatus.textContent = '⚠ ' + data.error;
+            if (data.hint) scanStatus.textContent += ' — ' + data.hint;
+            resultsArea.innerHTML = `<div class="scan-results-empty">❌ ${data.error}</div>`;
+            btnScan.disabled = false;
+            return;
+        }
+
+        // Show OCR result for user to correct
+        if (data.extracted) {
+            ocrName.value   = data.extracted.name   || '';
+            ocrNumber.value = data.extracted.number || '';
+            extBox.style.display = 'block';
+        }
+
+        scanStatus.textContent = data.results?.length
+            ? `✓ Found ${data.results.length} match${data.results.length !== 1 ? 'es' : ''}`
+            : '⚠ No cards matched. Try editing the name above and re-scanning.';
+
+        renderScanResults(data.results || []);
+    } catch (e) {
+        scanStatus.textContent = '⚠ Scan failed — check your connection.';
+        resultsArea.innerHTML  = '<div class="scan-results-empty">⚠ Network error.</div>';
+    }
+    btnScan.disabled = false;
+});
+
+// Re-scan with edited OCR fields
+[ocrName, ocrNumber].forEach(el => el.addEventListener('keydown', e => {
+    if (e.key === 'Enter') rescanWithEdits();
+}));
+
+async function rescanWithEdits() {
+    const name = ocrName.value.trim();
+    const num  = ocrNumber.value.trim();
+    if (!name && !num) return;
+    btnScan.disabled       = true;
+    scanStatus.textContent = '⏳ Searching…';
+    const params = new URLSearchParams({ q: name });
+    if (num) params.set('number', num);
+    try {
+        const res  = await fetch(`/api/search?${params}`);
+        const data = await res.json();
+        scanStatus.textContent = data.data?.length
+            ? `✓ Found ${data.data.length} match${data.data.length !== 1 ? 'es' : ''}`
+            : '⚠ No cards found.';
+        renderScanResults(data.data || []);
+    } catch (e) {
+        scanStatus.textContent = '⚠ Search failed.';
+    }
+    btnScan.disabled = false;
+}
+
+// ── Render results ──────────────────────────────────────────────
+function renderScanResults(cards) {
+    if (!cards.length) {
+        resultsArea.innerHTML = '<div class="scan-results-empty">No matches found. Try editing the name and pressing Enter to re-search.</div>';
+        return;
+    }
+    resultsArea.innerHTML = `<div class="scan-results-grid">${cards.map(c => {
+        const img   = c.images?.small || c.images?.large || '';
+        const price = c.tcgplayer?.prices?.normal?.market
+                   || c.tcgplayer?.prices?.holofoil?.market
+                   || 0;
+        return `<div class="scan-result-card" data-id="${c.id}">
+            ${img ? `<img src="${img}" alt="${c.name}" loading="lazy">` : `<div style="aspect-ratio:2/3;display:flex;align-items:center;justify-content:center;font-size:28px;background:var(--surface2)">${c.name[0]}</div>`}
+            <div class="src-info">
+                <span class="src-name">${c.name}</span>
+                <span class="src-set">${c.set?.name || ''} · #${c.number || '?'}</span>
+                ${price > 0 ? `<span class="src-price">$${price.toFixed(2)}</span>` : ''}
+            </div>
+        </div>`;
+    }).join('')}</div>`;
+
+    // Selection handler
+    resultsArea.querySelectorAll('.scan-result-card').forEach((el, i) => {
+        el.addEventListener('click', () => {
+            resultsArea.querySelectorAll('.scan-result-card').forEach(x => x.classList.remove('selected'));
+            el.classList.add('selected');
+            selectedCard = cards[i];
+            addBar.classList.add('visible');
+            addName.textContent = `Add "${selectedCard.name}" to Vault`;
+        });
+    });
+}
+
+// ── Add to vault ────────────────────────────────────────────────
+document.getElementById('btn-add-scanned').addEventListener('click', async () => {
+    if (!selectedCard) return;
+    const condition = document.getElementById('scan-condition').value;
+    const variant   = document.getElementById('scan-variant').value;
+    const qty       = parseInt(document.getElementById('scan-qty').value) || 1;
+    const mkt = selectedCard.tcgplayer?.prices;
+    let price = 0, foilPrice = 0;
+    if (mkt) {
+        price     = mkt.normal?.market     || mkt.normal?.mid     || 0;
+        foilPrice = mkt.holofoil?.market   || mkt.holofoil?.mid   || 0;
+        if (!price) price = foilPrice || (mkt[Object.keys(mkt)[0]]?.market || 0);
+    }
+    const payload = [{
+        tcg_id: selectedCard.id, name: selectedCard.name,
+        pokemon_type: selectedCard.types?.[0] || selectedCard.subtypes?.[0] || 'Colorless',
+        rarity: selectedCard.rarity || '',
+        set_name: selectedCard.set?.name || '', set_id: selectedCard.set?.id || '',
+        set_series: selectedCard.set?.series || '',
+        card_number: selectedCard.number || '', hp: selectedCard.hp || '',
+        subtypes: (selectedCard.subtypes || []).join(', '),
+        variant, condition, quantity: qty,
+        market_price: price, foil_price: foilPrice,
+        image_small: selectedCard.images?.small || '',
+        image_large: selectedCard.images?.large || '',
+        notes: ''
+    }];
+    try {
+        const res  = await fetch('/add', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+        const data = await res.json();
+        if (data.success) {
+            showToast(`${selectedCard.name} added to vault! ✓`);
+            addBar.classList.remove('visible');
+            resultsArea.querySelectorAll('.scan-result-card').forEach(x => x.classList.remove('selected'));
+            selectedCard = null;
+        } else {
+            showToast('Failed to add card', 'error');
+        }
+    } catch (e) {
+        showToast('Network error', 'error');
+    }
+});
+</script>
+</body>
+</html>
